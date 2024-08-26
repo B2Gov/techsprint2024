@@ -26,6 +26,5 @@ def recursive_dict_read(read_dict, date_parse_hook):
         if "date" in key.lower() or "fecha" in key.lower():
             read_dict[key] = date_parse_hook(value)
         elif isinstance(value, datetime):
-            # TODO: DEBUG or WARNING?
             print("key has not date and value type is datetime")
     return read_dict
