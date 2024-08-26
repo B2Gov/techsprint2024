@@ -152,8 +152,54 @@ class OCDSValidatorAI():
         # Devuelve la lista de respuestas JSON
         return rjson
 
+    def check_investment_project(self, compiled_release):
+        # Instrucciones del sistema para guiar al modelo
+        sys_inst = [
+            "Data given here is OCDS (Open Contracting Data Standard) data",
+            ("A tender has a description and items. "
+             "Each item has its own description."),
+            ("You must assess if the given descriptions correspond to an "
+             "investment project. If true, the category based on the object of"
+             " the process must be given."
+             "Categories are: Water and Sanitation, Health, Education, "
+             "Transportation, Energy, Housing, and Other."),
+            ("Some keywords to consider are given here (not exhaustive): "
+             "investment, project, infrastructure, construction, building, "
+             "road, bridge, hospital, school, airport, etc."),
+            ("The purchase of most goods and services is normally not an "
+             "investment project."),
+            ("A feedback message in english and spanish must be given."),
+            ("The answer must be a **valid** json file with the following "
+             "structure: {'is_investment_project': <bool>, 'feedback': <str>, "
+             "'feedback_es': <str>, 'category': <str>}."),
+            ("Don't add anything besides a valid json file. "
+             "Spaces, line breaks, etc. are not required."),
+        ]
+
+        # Obtiene la descripción de la licitación
+        tender_description = compiled_release["tender"]["description"]
+
+        # Obtiene las descripciones de los ítems de la licitación
+        tender_items_description = "\n".join(
+            [i["description"] for i in compiled_release["tender"]["items"]]
+        )
+
+        # Construye el prompt para el modelo
+        prompt = (f"tender description: '{tender_description}'\n"
+                  f"Tender item's descriptions (one per line):\n"
+                  f"{tender_items_description}")
+
+        # Genera contenido utilizando el modelo
+        response = self.generate_content(prompt, sys_inst)
+
+        # Convierte la respuesta en un objeto JSON
+        rjson = json.loads(response.text)
+
+        # Devuelve el objeto JSON
+        return rjson
+
 # Ruta al archivo JSON de ejemplo
-filepath = "ai_validator/sample_records/ocds-d6a7a6-IA-20-125-020000021-N-25-2023.json"
+filepath = "ai_validator/sample_records/ocds-d6a7a6-IO-84-H39-825001997-N-7-2023.json"
 
 with open(filepath, "r", encoding='utf-8') as f:
     # Carga el contenido del archivo JSON en un diccionario
@@ -168,6 +214,11 @@ ai = OCDSValidatorAI()
 tender_description_qa = ai.check_tender_description(crel)
 # Imprime el resultado de la verificación de la descripción
 print(tender_description_qa)
+
+# Verifica si es un proyecto de inversión
+investment_project_qa = ai.check_investment_project(crel)
+# Imprime el resultado de la verificación del proyecto de inversión
+print(investment_project_qa)
 
 # Verifica las unidades de los ítems
 item_unit_qa = ai.check_tender_items_units(crel)
